@@ -1,0 +1,60 @@
+name: CI/CD to Elastic Beanstalk
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+env:
+  AWS_REGION: eu-north-1
+  EB_APP: my-node-app
+  EB_ENV: my-node-app-env
+  S3_BUCKET: elasticbeanstalk-eu-north-1-302805792674
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm test --if-present
+
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Package app
+        run: zip -r app-${{ github.sha }}.zip . -x "node_modules/*" ".git/*" ".github/*"
+
+      - name: Upload to S3
+        run: aws s3 cp app-${{ github.sha }}.zip s3://$S3_BUCKET/$EB_APP/app-${{ github.sha }}.zip
+
+      - name: Create application version
+        run: |
+          aws elasticbeanstalk create-application-version \
+            --application-name $EB_APP \
+            --version-label ${{ github.sha }} \
+            --source-bundle S3Bucket=$S3_BUCKET,S3Key=$EB_APP/app-${{ github.sha }}.zip
+
+      - name: Deploy
+        run: |
+          aws elasticbeanstalk update-environment \
+            --environment-name $EB_ENV \
+            --version-label ${{ github.sha }}
+
+      - name: Wait for deployment
+        run: aws elasticbeanstalk wait environment-updated --environment-names $EB_ENV
