@@ -9,8 +9,8 @@ permissions:
 
 env:
   AWS_REGION: eu-north-1
-  EB_APP: my-node-app
-  EB_ENV: my-node-app-env
+  EB_APP: Eha
+  EB_ENV: Eha-env
   S3_BUCKET: elasticbeanstalk-eu-north-1-302805792674
 
 jobs:
