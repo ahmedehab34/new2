@@ -1,4 +1,4 @@
-name: CI/CD to Elastic Beanstalk
+name: CI/CD to Elastic Beanstalwk
 
 on:
   push:
