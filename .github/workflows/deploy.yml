@@ -2,7 +2,7 @@ name: CI/CD to Elastic Beanstalwk
 
 on:
   push:
-    branches: [main]
+    branches: [main,feature]
 
 permissions:
   contents: read
@@ -27,6 +27,7 @@ jobs:
 
   deploy:
     needs: test
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
